@@ -1,8 +1,13 @@
-var server = require('./server');
+const Server = require("./server");
+const MongoDB = require("./mongodb");
 
-function main() {
-    // start server
-    server.initiateServer();
+class Main {
+    constructor() {
+        this.server = new Server();
+        this.server.initServer();
+        this.database = new MongoDB();
+        this.database.initDatabase();
+    };
 }
 
-main();
+new Main();
