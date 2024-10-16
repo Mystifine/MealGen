@@ -2,16 +2,16 @@
 Welcome to the notes section. This section is to guide you through the directory and understanding of what a project typically contains. These are in no particular order.
 
 # decorators
-Python decorators are basically functions in functions. This is thanks to the behaviour of being able to pass functions as parameters into other functios. I will only be using it as needed.
+Python decorators are basically functions in functions. This is thanks to the behaviour of being able to pass functions as parameters into other functions.
 
 # .gitkeep
-.gitkeep is a common file used to temporarily hold folders that you wish to have when committing changes to the repository on GitHub. An example of this would be say I am working on the backend (server) part of the project and the client folder is empty. If I still wish to have this folder show on the GitHub repository, the .gitkeep file will be kept.
+.gitkeep is a common file used to temporarily hold folders that you wish to have when committing changes to the repository on GitHub. An example of this would be say I am working on the backend (server) part of the project and the client folder is empty. If I still wish to have this folder show on the GitHub repository, the .gitkeep file save the folder.
 
 # .md
-.md files are are markdown files. This file itself is a markdown file. Markdown files hold raw text and is popular for writing documentation or creating formatted content such as this.
+.md files are are markdown files. This file you are looking at is a markdown file. Markdown files hold raw text and is popular for writing documentation or creating formatted content such as this.
 
 # requirements.txt
-requirements.txt is a common file that comes with many python projects. This file allows for anyone to install dependencies such as frameworks and libraries with the exact versions to run the project. If we were using a different backend such as node.js dependencies would be directly installed into the project folder. Python on the other hand acts a little differently installing these frameworks and libraries globally onto your pc/laptop env.
+requirements.txt is a common file that comes with many python projects. This file allows for anyone to install dependencies such as frameworks and libraries with the exact versions to run the project. If we were using a different backend such as node.js, dependencies would be directly installed into the project folder. Python on the other hand behaves differently installing these frameworks and libraries globally onto your pc/laptop env.
 
 # run.py vs __init__.py vs main.py
 Different languages typically come with different setups and structures to run their application. For java we would typically use a main.java file. However, for python the "norm" is to use "\_\_init\_\_.py". Before python 3.3, an \_\_init\_\_.py file was necessary for the directory to be classified as a "package". This allows for imports from the entire package at ease for run.py and other modules that lie outside of the package. Be careful when importing modules from within the same package. It is recommended to use the local importation notation example:
@@ -39,3 +39,13 @@ Flask is the framework we are using to set up end points. Unfortunantely, Flask 
 
 # BCrypt
 BCrypt is used as a one way hash for passwords. BCrypt does this by having it's own one way algorithim and then applying a "salt" to the password. This salt is then hashed with the password and when comparing the password the salt is automatically retrieved allowing us to not store the salt. It's great to have secure password as part of the project. 
+
+# pubspec.yaml
+pubspec yaml contains application metadata regarding version, packages, dependencies and etc. 
+
+# client/app/assets/images
+This file contains assets used in the application. There is a few things that should be noted when importing different types of files for mobile applications. To start, we need to understand that the application is ran on many different devices and each screen has different resolutions. Different image file types will also impact the project. There are 2 common file sizes used in app development:
+* .png: Lossless compression and supports transparency but larger file size (Usually used for icons)
+* .jpeg: Smaller file size good for reducing app size and improving load times but quality can be degraded when compressed. Does not support transparent backgrounds. (Usually used for themes/backgrounds)
+* webp: Modern balance between png and jpeg however is not supported cross platform. Good for android.
+It is common for professional app developers to provide different images of various dimensions for different screen densities. Flutter is capable of detecting the screen densitiy and select a proper image if provided, otherwise it is scaled automatically.
