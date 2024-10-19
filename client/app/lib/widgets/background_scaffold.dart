@@ -13,11 +13,28 @@ class BackgroundScaffold extends StatelessWidget {
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          Image.asset(
-            'assets/images/background.jpeg', 
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity, 
+          Container(
+            width : double.infinity,
+            height : double.infinity,
+            padding: const EdgeInsets.all(15.0),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color.fromARGB(255, 255, 128, 0),
+                  Color.fromARGB(255, 255, 128, 0),
+                  Color.fromARGB(255, 196, 98, 0)
+                ]
+              ),
+            ),
+            child: Image.asset(
+              "assets/images/background_texture.png",
+              width: double.infinity,
+              height: double.infinity,
+              color: const Color.fromARGB(84, 140, 70, 0),
+              fit : BoxFit.cover,
+            ),
           ),
           SafeArea(
             child: child!,
