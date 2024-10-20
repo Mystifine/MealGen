@@ -1,18 +1,40 @@
+import 'package:app/routes/app_routes.dart';
+import 'package:app/util/validators.dart';
 import 'package:app/widgets/background_scaffold.dart';
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
 import 'package:app/theme/theme.dart';
+import 'package:icons_plus/icons_plus.dart';
 
-class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  State<SignInScreen> createState() => _SignInScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignInScreenState extends State<SignInScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
+
   final _formSignInKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
+
+  String? _email = "";
+  String? _username = "";
+  String? _password = "";
+
+  void _submitForm () {
+    if (_formSignInKey.currentState!.validate()) {
+      _formSignInKey.currentState!.save();
+
+      // submission code
+      if (_formSignInKey.currentState!.validate()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Logging you in... $_username $_password $_email")
+          )
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +48,7 @@ class _SignInScreenState extends State<SignInScreen> {
           Expanded(
             flex : 8,
             child: Container(
-              padding: const EdgeInsets.fromLTRB(25, 50, 25, 20),
+              padding: const EdgeInsets.fromLTRB(25, 35, 25, 20),
               width: double.infinity,
               decoration: const BoxDecoration(
                 color : Colors.white,
@@ -42,7 +64,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        'Enter Login Credentials',
+                        'Sign Up',
                         style: TextStyle(
                           color: lightColorScheme.primary,
                           fontSize: 26.0,
@@ -50,18 +72,77 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                       ),
                       
-                      const SizedBox(height: 40,),
-                      
+                      const SizedBox(height: 30,),
+
                       TextFormField(
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Please enter valid username";
-                          }
-                          return null;
+                        validator: Validators.validateEmail,
+                        onSaved: (newValue) {
+                          _email = newValue;
                         },
                         decoration: InputDecoration(
-                          label : const Text("Username/Email"),
-                          hintText: "Enter your username or email address",
+                          label : const Text("Email"),
+                          hintText: "Enter your email address",
+                          hintStyle: const TextStyle(
+                            color: Colors.black26
+                          ),
+                          border: OutlineInputBorder(
+                            borderSide: const BorderSide(
+                              color: Colors.black12,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(
+                              color: Colors.black12,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          )
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                      
+                      TextFormField(
+                        validator: Validators.validateUsername,
+                        onSaved: (newValue) {
+                          _username = newValue;
+                        },
+                        decoration: InputDecoration(
+                          label : const Text("Username"),
+                          hintText: "Enter a username",
+                          hintStyle: const TextStyle(
+                            color: Colors.black26
+                          ),
+                          border: OutlineInputBorder(
+                            borderSide: const BorderSide(
+                              color: Colors.black12,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(
+                              color: Colors.black12,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          )
+                        ),
+                      ),
+
+                      const SizedBox(height: 20,),
+                      
+                      TextFormField(
+                        obscureText: !_isPasswordVisible,
+                        obscuringCharacter: "*",
+                        validator: Validators.validatePassword,
+                        onChanged: (value) {
+                          _password = value;
+                        },
+                        onSaved: (newValue) {
+                          _password = newValue;
+                        },
+                        decoration: InputDecoration(
+                          label : const Text("Password"),
+                          hintText: "Enter a password",
                           hintStyle: const TextStyle(
                             color: Colors.black26
                           ),
@@ -86,14 +167,15 @@ class _SignInScreenState extends State<SignInScreen> {
                         obscureText: !_isPasswordVisible,
                         obscuringCharacter: "*",
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Please enter valid username";
+                          if (value == _password) {
+                            return null;
+                          } else {
+                            return "Passwords do not match";
                           }
-                          return null;
                         },
                         decoration: InputDecoration(
-                          label : const Text("Password"),
-                          hintText: "Enter your password.",
+                          label : const Text("Confirm Password"),
+                          hintText: "Enter your password again",
                           hintStyle: const TextStyle(
                             color: Colors.black26
                           ),
@@ -111,7 +193,9 @@ class _SignInScreenState extends State<SignInScreen> {
                           )
                         ),
                       ),
-                      const SizedBox(height: 10),      
+
+                      const SizedBox(height: 10),   
+
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -134,15 +218,6 @@ class _SignInScreenState extends State<SignInScreen> {
                               ),
                             ],
                           ),
-                          GestureDetector(
-                            child: Text(
-                              "Forget Password?",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: lightColorScheme.primary,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 20,),
@@ -156,17 +231,9 @@ class _SignInScreenState extends State<SignInScreen> {
                               borderRadius: BorderRadius.circular(15),  
                             ),
                           ),
-                          onPressed: () {
-                            if (_formSignInKey.currentState!.validate()) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Logging you in...")
-                                )
-                              );
-                            }
-                          }, 
+                          onPressed: _submitForm,
                           child: const Text(
-                            "Login",
+                            "Sign Up",
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.white,
@@ -223,11 +290,14 @@ class _SignInScreenState extends State<SignInScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            "Don't have an account? "
+                            "Already have an account? "
                           ),
                           GestureDetector(
+                            onTap: () {
+                              Navigator.pushReplacementNamed(context, AppRoutes.login);
+                            },
                             child: Text(
-                              "Sign up",
+                              "Sign In",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: lightColorScheme.primary,

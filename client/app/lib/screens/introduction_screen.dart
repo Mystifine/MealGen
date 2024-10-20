@@ -1,5 +1,4 @@
-import 'package:app/screens/sign_in_screen.dart';
-import 'package:app/screens/sign_up_screen.dart';
+import 'package:app/routes/app_routes.dart';
 import 'package:app/widgets/background_scaffold.dart';
 import 'package:app/widgets/introduction_button.dart';
 import 'package:flutter/material.dart';
@@ -61,7 +60,7 @@ class IntroductionScreen extends StatelessWidget {
             child: IntroductionButton(
               buttonText: "Login", 
               backgroundColor: Color.fromARGB(255, 255, 0, 43), 
-              targetScreen: SignInScreen()
+              screenRoute: AppRoutes.login,
             )
           ),
           const SizedBox(height: 20,),
@@ -70,7 +69,7 @@ class IntroductionScreen extends StatelessWidget {
             child: IntroductionButton(
               buttonText: "Sign Up", 
               backgroundColor: Color.fromARGB(255, 50, 200, 132), 
-              targetScreen: SignUpScreen()
+              screenRoute: AppRoutes.signup,
             )
           ),
           

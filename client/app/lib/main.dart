@@ -1,4 +1,5 @@
 import 'package:app/screens/introduction_screen.dart';
+import 'package:app/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -15,6 +16,9 @@ class MyApp extends StatelessWidget {
       title: 'MealGen',
       debugShowCheckedModeBanner: false,
 
+      initialRoute: AppRoutes.introduction,
+      onGenerateRoute: AppRoutes.generateRoute,
+
       theme: ThemeData(
         appBarTheme: AppBarTheme(
           iconTheme: IconThemeData(
@@ -25,6 +29,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
         useMaterial3: true,
       ),
+
       home: const IntroductionScreen(),
     );
   }

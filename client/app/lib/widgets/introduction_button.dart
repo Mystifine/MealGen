@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 
 class IntroductionButton extends StatelessWidget {
-  const IntroductionButton({super.key, required this.buttonText, required this.backgroundColor, required this.targetScreen});
+  const IntroductionButton({super.key, required this.buttonText, required this.backgroundColor, required this.screenRoute});
+  
   final String buttonText;
   final Color backgroundColor;
-  final Widget targetScreen;
+  final String screenRoute;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
         onTap:() {
-          Navigator.push(
-            context, 
-            MaterialPageRoute(
-              builder: (e) => targetScreen
-            )
-          );
+          Navigator.pushNamed(context,screenRoute,);
         },
         child: Container(
           padding: const EdgeInsets.all(10.0),
