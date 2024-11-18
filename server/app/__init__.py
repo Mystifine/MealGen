@@ -1,21 +1,39 @@
-from .api_endpoints import APIEndPoints;
-from .database import Database;
+from dotenv import load_dotenv;
+from os import getenv;
 
-class Main:
-    api_endpoints : APIEndPoints;
-    database : Database;
+from flask import Flask;
 
+from .core.flask_app import FlaskApp;
+from .core.mongo_db import MongoDB;
+
+class App:
     """
-    Purpose is to set up the server
-    * REST End Points to handle API requests
-    * MongoDB
+    Main server app that handles the initiation of all processes
+    
+    Attributes:
+        flask_app (Flask) : Flask app
+        mongo_db (MongoDB) : Database for the application
     """
-    def __init__(self) -> None:
-        self.database = Database();
-        self.database.main();
+    
+    flask_app : Flask;
+    mongo_db : MongoDB;
         
-        # the api_endpoints depend on the database;
-        self.api_endpoints = APIEndPoints();
-        self.api_endpoints.main(self.database);
-            
-        self.api_endpoints.app.run(port=5000);
+    def __init__(self) -> None:
+        """
+        Starts the server application. Calls other core initiation functions.
+        
+        Parameters
+            self : object class instance
+
+        Returns
+            None
+
+        Raises
+            None
+        """
+        
+        # initializes the mongo database class
+        self.mongo_db = MongoDB();
+
+        # initializes the API end points by starting flask
+        self.flask_app = FlaskApp(self.mongo_db);

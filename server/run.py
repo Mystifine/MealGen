@@ -1,5 +1,5 @@
 
-from app import Main;
+from app import App;
 
 # initiates the server
-Main();
+App();

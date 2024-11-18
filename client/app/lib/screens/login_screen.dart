@@ -1,6 +1,7 @@
 import 'package:app/routes/app_routes.dart';
 import 'package:app/util/validators.dart';
 import 'package:app/widgets/background_scaffold.dart';
+import 'package:app/widgets/loading_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:app/theme/theme.dart';
@@ -19,17 +20,26 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _userid = "";
   String? _password = "";
 
-  void _submitForm () {
+  void _submitForm (context) {
     if (_formSignInKey.currentState!.validate()) {
       _formSignInKey.currentState!.save();
 
       // submission code
       if (_formSignInKey.currentState!.validate()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Logging you in... $_userid $_password")
-          )
+        // Show the loading screen when the button is pressed
+        showDialog(
+          context: context,
+          barrierDismissible: false,  // Prevent closing by tapping outside
+          builder: (BuildContext context) {
+            return LoadingFrame();  // Show your loading widget here
+            
+          },
         );
+
+        // Simulate some delay, then close the loading screen
+        Future.delayed(Duration(seconds: 5), () {
+          Navigator.of(context).pop();  // Close the dialog after 3 seconds
+        });
       }
     }
   }
@@ -172,7 +182,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(15),  
                             ),
                           ),
-                          onPressed: _submitForm,
+                          onPressed: () {
+                            return _submitForm(context);
+                          },
                           child: const Text(
                             "Login",
                             style: TextStyle(

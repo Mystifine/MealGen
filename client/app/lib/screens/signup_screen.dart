@@ -4,6 +4,8 @@ import 'package:app/widgets/background_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:app/theme/theme.dart';
 import 'package:icons_plus/icons_plus.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';  // For handling JSON data if needed
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
