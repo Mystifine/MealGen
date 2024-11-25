@@ -5,6 +5,8 @@ import 'package:app/widgets/loading_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:app/theme/theme.dart';
+import 'package:http/http.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,8 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
           context: context,
           barrierDismissible: false,  // Prevent closing by tapping outside
           builder: (BuildContext context) {
-            return LoadingFrame();  // Show your loading widget here
-            
+            return LoadingFrame(message: "Loading your data...",); 
           },
         );
 

@@ -4,7 +4,9 @@ import importlib;
 from dotenv import load_dotenv;
 
 from flask import Flask;
+from flask_cors import CORS
 
+from .settings import Settings;
 from .mongo_db import MongoDB;
 from ..enums.flask_environment_enums import FLASK_ENVIRONMENT_ENUMS;
 
@@ -33,16 +35,14 @@ class FlaskApp:
     """
     
     self.flask_app = Flask(__name__);
-
-    # load the env variables
-    load_dotenv("server/app/.env");
-
+    CORS(self.flask_app);
+    
     # retrieve env variables
-    flask_env = os.getenv("FLASK_ENV");
-    secret_key = os.getenv("SECRET_KEY");
+    flask_env = Settings.FLASK_ENV;
+    flask_secret_key = Settings.FLASK_SECRET_KEY;
 
     # setting flask configurations
-    self.flask_app.config["SECRET_KEY"] = secret_key;
+    self.flask_app.config["SECRET_KEY"] = flask_secret_key;
 
     # config debug_mode based on flask_env
     if flask_env == FLASK_ENVIRONMENT_ENUMS.DEVELOPMENT.value:

@@ -2,7 +2,11 @@ import bcrypt;
 
 from pymongo.errors import PyMongoError;
 from flask import Flask, Blueprint, jsonify, request;
+
 from ..core.mongo_db import MongoDB;
+
+from ..util.generate_authentication_code import JWTAuthentication;
+from ..util.user_input_validation import UserInputValidation;
 
 from ..enums.api_error_enums import API_ERROR_ENUMS;
 from ..enums.http_codes_enums import HTTP_CODE_ENUMS;
@@ -22,32 +26,54 @@ class AuthEndpoints:
         return jsonify({'error': API_ERROR_ENUMS.DATA_NOT_JSON.value}), HTTP_CODE_ENUMS.BAD_REQUEST.value;
 
       try:
-        # validate and deserialize the JSON data using the schema
+        # Retrieve data from request, retrieved data is a python dictionary.
         data = request.get_json();
         
-        # now we want to check if this user exists in the database using either username or email
-        collection = mongo_db["users"];
-        result = collection.find_one({
-          "$or": [ 
-              {"username" : data['username']}, 
-              {"email" : data['email']} 
-            ]
-          }
+        # The expected data we will be receiving.
+        username = data['username'];
+        password = data['password'];
+        
+        if not username or not password:
+          return jsonify({'error': API_ERROR_ENUMS.MISSING_FIELDS.value}), HTTP_CODE_ENUMS.BAD_REQUEST.value;
+        
+        # Now we want to check if this user exists in the users collection using their username.
+        # An account can theoretically have the same email for different accounts. 
+        users_collection = mongo_db["users"];
+        query_result = users_collection.find_one({
+          "username": username
+        });
+
+        # If we can't find an entry then we can't login.
+        if query_result is None:
+          return jsonify({'error': API_ERROR_ENUMS.USERNAME_DOES_NOT_EXIST.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;
+        
+        # Compare the stored password with our password hashed.
+        if not bcrypt.checkpw(password.encode('utf-8'), query_result['password'].encode('utf-8')):
+          return jsonify({'error': API_ERROR_ENUMS.INCORRECT_LOGIN_INFORMATION.value}), HTTP_CODE_ENUMS.UNAUTHORIZED.value;
+
+        # If we get to here we have logged in successfully.
+        # Our goal is to generate a authentication token that the client will use in the future.
+        # We will save the active authentication token to the database and use that to find the user.
+        authentication_token = JWTAuthentication.generateAuthenticationToken(str(query_result['_id']));
+        users_collection.update_one(
+          {'username' : username}, 
+          {'$set' : {'authentication_token' : authentication_token,}}
         );
-
-        if result is None:
-          return jsonify({'error': API_ERROR_ENUMS.USERNAME_TAKEN.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;
         
-        # if the result is not none we need to now compare the password;
-        if not bcrypt.checkpw(data['password'].encode('utf-8'), result['password'].encode('utf-8')):
-          return jsonify({'error': API_ERROR_ENUMS.INVALID_PASSWORD.value}), HTTP_CODE_ENUMS.UNAUTHORIZED.value;
-
-        # If we got here that means they successfully logged in!
-        return jsonify(result), HTTP_CODE_ENUMS.OK.value;
+        # Set return data and return it to the client.
+        return_data = {
+          'authentication_token' : authentication_token,
+        };
         
+        return jsonify(return_data), HTTP_CODE_ENUMS.OK.value;
+      except PyMongoError as err:
+        # if the validation fails, return the errors
+        print(f"An error has occured: {err}");
+        return jsonify({'error': API_ERROR_ENUMS.DATABASE_ERROR.value}), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value
       except Exception as err:
         # if the validation fails, return the errors
-        return jsonify({"errors": err.messages}), HTTP_CODE_ENUMS.BAD_REQUEST.value;
+        print(f"An error has occured: {err}");
+        return jsonify({'error': API_ERROR_ENUMS.INTERNAL_SERVER_ERROR.value}), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value
 
     @auth_blueprint.route('/signup', methods=['POST'])
     def signup():
@@ -55,46 +81,67 @@ class AuthEndpoints:
         return jsonify({'error': API_ERROR_ENUMS.DATA_NOT_JSON.value}), HTTP_CODE_ENUMS.BAD_REQUEST.value;
 
       try:
-        # validate and deserialize the JSON data using the schema
+        # Retrieve data from request, retrieved data is a python dictionary.
         data = request.get_json();
         
-        # now we want to check if this user exists in the database using either username or email
-        collection = mongo_db.database["users"];
+        username = data['username'];
+        email = data['email'];
+        password = data['password'];
         
-        username_result = collection.find_one({"username" : data['username']});
-        email_result = collection.find_one({'email' : data["email"]});
+        # First, make sure that these are valid inputs before proceeding.
+        if not UserInputValidation.validate_username(username):
+          return jsonify({'error': API_ERROR_ENUMS.INVALID_USERNAME.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;
+        if not UserInputValidation.validate_email(email):
+          return jsonify({'error': API_ERROR_ENUMS.INVALID_EMAIL.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;
+        if not UserInputValidation.validate_password(password):
+          return jsonify({'error': API_ERROR_ENUMS.INVALID_PASSWORD.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;
         
+        users_collection = mongo_db.database["users"];
+        
+        # We want to query the username to ensure that the username has not already been taken.
+        username_result = users_collection.find_one({"username" : username});
+        
+        # If we got a result that means that the username is already taken.
         if username_result:
           return jsonify({'error': API_ERROR_ENUMS.USERNAME_TAKEN.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;
         
-        if email_result:
-          return jsonify({'error': API_ERROR_ENUMS.EMAIL_TAKEN.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;
-        
+        # If we get this far, we are valid to create a new account. We will start the hashing process.
         salt = bcrypt.gensalt();
-        hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), salt).decode('utf-8');
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8');
         
         # Now we want to try to write to database;
-        try:
-          document_data = {
-            "email" : data['email'],
-            "username" : data['username'],
-            "password" : hashed_password,
-            "stars" : 0,
-          };
-          
-          validated_data = document_data;
-          
-          collection = mongo_db["users"];
-          result = collection.insert_one(validated_data);
-          
-          inserted_user = collection.find_one({"_id": result.inserted_id})
-          
-          return jsonify(inserted_user), HTTP_CODE_ENUMS.CREATED.value
-        except PyMongoError as e:
-          return jsonify({"error": e}), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value;
+        document_data = {
+          'email' : email,
+          'username' : username,
+          'password' : hashed_password,
+        }
+
+        insert_result = users_collection.insert_one(document_data);
         
+        # After MongoDB automatically generates an _id field we will use that to generate a AuthenticationToken.
+        # We will save the active authentication token to the database and use that to find the user.
+        user_id = str(insert_result.inserted_id);
+        authentication_token = JWTAuthentication.generateAuthenticationToken(user_id);
+
+        users_collection.update_one(
+          {'username' : username}, 
+          {'$set' : {'authentication_token' : authentication_token,}}
+        );
+        
+        # Set return data and return it to the client.
+        return_data = {
+          'authentication_token' : authentication_token,
+        };
+        
+        return jsonify(return_data), HTTP_CODE_ENUMS.CREATED.value;
+      except PyMongoError as err:
+        # if the validation fails, return the errors
+        print(f"An error has occured: {err}");
+        return jsonify({'error': API_ERROR_ENUMS.DATABASE_ERROR.value}), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value
       except Exception as err:
         # if the validation fails, return the errors
-        return jsonify({"errors": err.messages}), HTTP_CODE_ENUMS.BAD_REQUEST.value;
+        print(f"An error has occured: {err}");
+        return jsonify({'error': API_ERROR_ENUMS.INTERNAL_SERVER_ERROR.value}), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value
+
 
     return auth_blueprint;

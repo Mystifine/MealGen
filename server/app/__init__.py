@@ -5,6 +5,7 @@ from flask import Flask;
 
 from .core.flask_app import FlaskApp;
 from .core.mongo_db import MongoDB;
+from .core.settings import Settings;
 
 class App:
     """
@@ -31,6 +32,9 @@ class App:
         Raises
             None
         """
+        
+        # load settings first for the application
+        Settings.loadSettings();
         
         # initializes the mongo database class
         self.mongo_db = MongoDB();

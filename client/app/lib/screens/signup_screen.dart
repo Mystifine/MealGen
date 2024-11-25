@@ -1,11 +1,15 @@
 import 'package:app/routes/app_routes.dart';
 import 'package:app/util/validators.dart';
 import 'package:app/widgets/background_scaffold.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:app/theme/theme.dart';
 import 'package:icons_plus/icons_plus.dart';
+import 'package:app/widgets/loading_frame.dart';
+import 'package:app/util/api_constants.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';  // For handling JSON data if needed
+import 'dart:convert';
+import 'package:app/util/token_manager.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -15,6 +19,7 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  final GlobalKey<LoadingFrameState> _loadingFrameKey = GlobalKey();
 
   final _formSignInKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
@@ -23,18 +28,57 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String? _username = "";
   String? _password = "";
 
-  void _submitForm () {
+  Future<void> _submitForm() async {
+    final signupURL = Uri.parse(APIConstants.signupEndpoint);
+
+    // Validate the form descendant fields.
     if (_formSignInKey.currentState!.validate()) {
+      // Save the descendant fields.
       _formSignInKey.currentState!.save();
 
-      // submission code
-      if (_formSignInKey.currentState!.validate()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Logging you in... $_username $_password $_email")
-          )
+      // Display loading frame while we are sending a http request.
+      showDialog(
+        context: context,
+        barrierDismissible: false,  // Prevent closing by tapping outside
+        builder: (BuildContext context) {
+          return LoadingFrame(
+            key: _loadingFrameKey,
+            message: "Signing you up..."
+          );  // Show your loading widget here
+        },
+      );
+
+      // Send http request to sign up.
+      final payload = {
+        'username' : _username,
+        'password' : _password,
+        'email' : _email,
+      };
+
+      try {
+        final response = await http.post(
+          signupURL,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode(payload),
         );
+
+        // If return code is 201, it means we have created an account.
+        final dynamic data;
+        if (response.statusCode == 201) {
+          data = jsonDecode(response.body);
+          TokenManager().authToken = data['authentication_token'];
+          _loadingFrameKey.currentState?.updateMessage("Welcome $_username!");
+        } else {
+          data = jsonDecode(response.body);
+          _loadingFrameKey.currentState?.updateMessage("Failed to create data: ${data['error']} ${response.statusCode}");
+        }
+      } catch (e) {
+        _loadingFrameKey.currentState?.updateMessage("Failed to create data: $e");
       }
+
+      await Future.delayed(const Duration(seconds: 5));
+      if (!mounted) return; // Ensure widget is still mounted
+      Navigator.of(context).pop(); // Dismiss the dialog
     }
   }
 

@@ -2,27 +2,30 @@ import 'package:app/theme/theme.dart';
 import 'package:flutter/material.dart';
 
 class LoadingFrame extends StatefulWidget {
-  const LoadingFrame({super.key});
+  final String message;
+
+  const LoadingFrame({super.key, required this.message});
 
   @override
   State<LoadingFrame> createState() {
-    return _LoadingFrameState();
+    return LoadingFrameState();
   }
 }
 
-class _LoadingFrameState extends State<LoadingFrame> {
-  late Future<String>? futureData;
+class LoadingFrameState extends State<LoadingFrame> {
+  late String state = "Loading";
+  late String currentMessage;
 
   @override
   void initState() {
     super.initState();
-    futureData = fetchData();  // Call fetchData when the widget is created
+    currentMessage = widget.message;
   }
 
-  Future<String> fetchData() async {
-    // Simulate network call
-    await Future.delayed(Duration(seconds: 3));
-    return Future.value("Data Loaded!");
+  void updateMessage(String newMessage) {
+    setState(() {
+      currentMessage = newMessage;
+    });
   }
 
   static Widget createLoadingText(String message) {
@@ -61,51 +64,17 @@ class _LoadingFrameState extends State<LoadingFrame> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-      ),
-      body: FutureBuilder<String>(
-        future: futureData,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            // Show loading widget while waiting for the future
-            return buildLoadingFrame(
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    color: lightColorScheme.primary,
-                  ),
-                  SizedBox(height: 26,),
-                  createLoadingText("Loading your data..."),
-                ]
-              )           
-            );
-          } else if (snapshot.hasError) {
-            return buildLoadingFrame(createLoadingText('Error: ${snapshot.error}'));
-          } else if (snapshot.hasData) {
-            return buildLoadingFrame(
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    alignment: Alignment.center,
-                    'assets/images/checkmark_icon.png',
-                    color: lightColorScheme.primary,
-                    width: 50,
-                    height: 50,
-                  ),
-                  SizedBox(height: 26,),
-                  createLoadingText(snapshot.data!)
-                ]
-              )
-            );
-          }
-          return buildLoadingFrame(Container()); // Fallback in case of unknown state
-        },
-      ),
+    return buildLoadingFrame(
+      Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: lightColorScheme.primary,
+          ),
+          SizedBox(height: 26,),
+          createLoadingText(currentMessage),
+        ]
+      )           
     );
   }
 }

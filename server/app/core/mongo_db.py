@@ -1,10 +1,9 @@
-from os import getenv;
-from dotenv import load_dotenv;
-
 import pymongo;
 import pymongo.database;
 from pymongo.server_api import ServerApi;
 from pymongo.errors import PyMongoError;
+
+from .settings import Settings;
 
 class MongoDB:
   """
@@ -32,9 +31,8 @@ class MongoDB:
     Raises
       None
     """
-    # get the env variables
-    load_dotenv("server/app/.env");
-    self.database_url = getenv("DATABASE_URL");
+
+    self.database_url = Settings.MONGO_DB_URL;
   
   def establishConnection(self) -> None:
     """
@@ -49,9 +47,12 @@ class MongoDB:
     Raises
       None
     """
-    # open a connection to the database;
-    self.database_client = pymongo.MongoClient(self.database_url, server_api=ServerApi('1'));
-    self.database = self.database_client["MealGen"];
+    # Attempts to establish a database client
+    try:
+      self.database_client = pymongo.MongoClient(self.database_url, server_api=ServerApi('1'));
+      self.database = self.database_client["MealGen"];
+    except PyMongoError as e:
+      print(f"An error occurred: {e}");
 
   def closeConnection(self) -> None:
     """
@@ -67,9 +68,11 @@ class MongoDB:
       None
     """
     
-    # closes the database connections;
-    if self.database_client is not None:
-      self.database_client.close()
-      self.database_client = None;
-      self.database = None;
-
+    # Closes the database connection.
+    try:
+      if self.database_client is not None:
+        self.database_client.close()
+        self.database_client = None;
+        self.database = None;
+    except PyMongoError as e:
+      print(f"An error occurred while closing the database connection: {e}");
