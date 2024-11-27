@@ -1,4 +1,5 @@
 import 'package:app/screens/introduction_screen.dart';
+import 'package:app/screens/logged_in_base_screen.dart';
 import 'package:app/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
 
-      home: const IntroductionScreen(),
+      home: const LoggedInBaseScreen(), //const IntroductionScreen(),
     );
   }
 }

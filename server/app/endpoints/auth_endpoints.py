@@ -1,4 +1,5 @@
 import bcrypt;
+import traceback;
 
 from pymongo.errors import PyMongoError;
 from flask import Flask, Blueprint, jsonify, request;
@@ -38,7 +39,7 @@ class AuthEndpoints:
         
         # Now we want to check if this user exists in the users collection using their username.
         # An account can theoretically have the same email for different accounts. 
-        users_collection = mongo_db["users"];
+        users_collection = mongo_db.database["users"];
         query_result = users_collection.find_one({
           "username": username
         });
@@ -73,6 +74,7 @@ class AuthEndpoints:
       except Exception as err:
         # if the validation fails, return the errors
         print(f"An error has occured: {err}");
+        traceback.print_exc();
         return jsonify({'error': API_ERROR_ENUMS.INTERNAL_SERVER_ERROR.value}), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value
 
     @auth_blueprint.route('/signup', methods=['POST'])

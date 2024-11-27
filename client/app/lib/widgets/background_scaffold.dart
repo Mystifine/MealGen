@@ -24,7 +24,6 @@ class BackgroundScaffold extends StatelessWidget {
                 colors: [
                   Color.fromARGB(255, 255, 128, 0),
                   Color.fromARGB(255, 255, 128, 0),
-                  Color.fromARGB(255, 196, 98, 0)
                 ]
               ),
             ),
@@ -32,7 +31,7 @@ class BackgroundScaffold extends StatelessWidget {
               "assets/images/background_texture.png",
               width: double.infinity,
               height: double.infinity,
-              color: const Color.fromARGB(84, 140, 70, 0),
+              color: const Color.fromARGB(82, 155, 78, 0),
               fit : BoxFit.cover,
             ),
           ),

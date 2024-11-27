@@ -1,12 +1,20 @@
 import 'package:app/routes/app_routes.dart';
+
 import 'package:app/util/validators.dart';
+import 'package:app/util/token_manager.dart';
+import 'package:app/util/api_constants.dart';
+
 import 'package:app/widgets/background_scaffold.dart';
 import 'package:app/widgets/loading_frame.dart';
+
+import 'package:app/theme/theme.dart';
+
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
-import 'package:app/theme/theme.dart';
-import 'package:http/http.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
+import 'package:app/screens/logged_in_base_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,33 +24,71 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final GlobalKey<LoadingFrameState> _loadingFrameKey = GlobalKey();
+
   final _formSignInKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
   
-  String? _userid = "";
+  String? _username = "";
   String? _password = "";
 
-  void _submitForm (context) {
-    if (_formSignInKey.currentState!.validate()) {
-      _formSignInKey.currentState!.save();
-
-      // submission code
-      if (_formSignInKey.currentState!.validate()) {
-        // Show the loading screen when the button is pressed
-        showDialog(
-          context: context,
-          barrierDismissible: false,  // Prevent closing by tapping outside
-          builder: (BuildContext context) {
-            return LoadingFrame(message: "Loading your data...",); 
-          },
-        );
-
-        // Simulate some delay, then close the loading screen
-        Future.delayed(Duration(seconds: 5), () {
-          Navigator.of(context).pop();  // Close the dialog after 3 seconds
-        });
-      }
+  Future<void> _submitForm() async {
+    // Validate the descendant fields
+    if (!_formSignInKey.currentState!.validate()) {
+      return;
     }
+
+    // Save the form state
+    _formSignInKey.currentState!.save();
+
+    final loginURL = Uri.parse(APIConstants.loginEndpoint);
+
+    // Show the loading screen when the button is pressed
+    showDialog(
+      context: context,
+      barrierDismissible: false,  // Prevent closing by tapping outside
+      builder: (BuildContext context) {
+        return LoadingFrame(
+          key: _loadingFrameKey,
+          message: "Loading your data...",
+        ); 
+      },
+    );
+
+    // Set up http request to log in.
+    final payload = {
+      'username' : _username,
+      'password' : _password,
+    };
+
+    try {
+      final response = await http.post(
+        loginURL,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(payload),
+      );
+
+      // If return code is 200 that means we have logged in!
+      final dynamic data;
+      if (response.statusCode == 200) {
+        data = jsonDecode(response.body);
+        TokenManager().authToken = data['authentication_token'];
+        _loadingFrameKey.currentState?.updateMessage("Welcome $_username!");
+      } else {
+        data = jsonDecode(response.body);
+        _loadingFrameKey.currentState?.updateMessage("Failed to load data: ${data['error']} ${response.statusCode}");
+      }
+    } catch (e) {
+      _loadingFrameKey.currentState?.updateMessage("Failed to load data: $e");
+    }
+
+    await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) return; // Ensure widget is still mounted
+    Navigator.of(context).pop(); // Dismiss the dialog
+    Navigator.pushReplacementNamed(
+      context, 
+      '/logged_in'
+    );
   }
 
   @override
@@ -86,11 +132,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         validator: Validators.validateUsername,
                         onSaved: (newValue) {
-                          _userid = newValue;
+                          _username = newValue;
                         },
                         decoration: InputDecoration(
-                          label : const Text("Username/Email"),
-                          hintText: "Enter your username or email address",
+                          label : const Text("Username"),
+                          hintText: "Enter your username",
                           hintStyle: const TextStyle(
                             color: Colors.black26
                           ),
@@ -183,9 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(15),  
                             ),
                           ),
-                          onPressed: () {
-                            return _submitForm(context);
-                          },
+                          onPressed: _submitForm,
                           child: const Text(
                             "Login",
                             style: TextStyle(

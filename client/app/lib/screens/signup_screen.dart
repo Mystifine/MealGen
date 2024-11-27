@@ -1,15 +1,20 @@
 import 'package:app/routes/app_routes.dart';
+
 import 'package:app/util/validators.dart';
-import 'package:app/widgets/background_scaffold.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:app/theme/theme.dart';
-import 'package:icons_plus/icons_plus.dart';
-import 'package:app/widgets/loading_frame.dart';
+import 'package:app/util/token_manager.dart';
 import 'package:app/util/api_constants.dart';
+
+import 'package:app/widgets/background_scaffold.dart';
+import 'package:app/widgets/loading_frame.dart';
+
+import 'package:app/theme/theme.dart';
+
+import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:app/util/token_manager.dart';
+
+import 'package:app/screens/logged_in_base_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -76,9 +81,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
         _loadingFrameKey.currentState?.updateMessage("Failed to create data: $e");
       }
 
-      await Future.delayed(const Duration(seconds: 5));
+      await Future.delayed(const Duration(seconds: 3));
       if (!mounted) return; // Ensure widget is still mounted
       Navigator.of(context).pop(); // Dismiss the dialog
+      // Head to logged in page.
+      Navigator.pushReplacementNamed(
+        context, 
+        '/logged_in'
+      );
     }
   }
 
