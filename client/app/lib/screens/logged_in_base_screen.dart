@@ -15,10 +15,11 @@ class LoggedInBaseScreen extends StatefulWidget {
 
 class _LoggedInBaseScreenState extends State<LoggedInBaseScreen> {
   // selectedIndex to manage the selected page
-  int _selectedIndex = 0;
+  int _selectedMenuIndex = 0;
+  int _selectedPageIndex = 0;
 
   // Recipes Information
-  List<Map<String, String>> _recipes = [];
+  final List<Map<String, String>> _recipes = [];
   bool _isLoading = false;
   int _page = 1;
 
@@ -51,10 +52,19 @@ class _LoggedInBaseScreenState extends State<LoggedInBaseScreen> {
     
   }
 
-  void _onPageButtonPressed(int index) {
+  // changes the page to the provided index
+  void _changePages(int index) {
     setState(() {
-      _selectedIndex = index;
+      _selectedPageIndex = index;
     });
+  }
+
+  // updates the selected menu index which triggers a page change
+  void _onMenuButtonPressed(int index) {
+    setState(() {
+      _selectedMenuIndex = index;
+    });
+    _changePages(index);
   }
 
   @override
@@ -76,8 +86,8 @@ class _LoggedInBaseScreenState extends State<LoggedInBaseScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         selectedItemColor: lightColorScheme.primary,
-        currentIndex: _selectedIndex,
-        onTap: _onPageButtonPressed,
+        currentIndex: _selectedMenuIndex,
+        onTap: _onMenuButtonPressed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.local_pizza), label: 'Recipes'),
@@ -108,14 +118,18 @@ class _LoggedInBaseScreenState extends State<LoggedInBaseScreen> {
             ),
           ),
           IndexedStack(
-            index: _selectedIndex,
+            index: _selectedPageIndex,
             children: [
-              HomePage(onPageSelected: _onPageButtonPressed),
+              HomePage(
+                selectMenuItem: _onMenuButtonPressed,
+                changePages: _changePages,
+              ),
               RecipesPage(
                 recipes: _recipes,
                 isLoading: _isLoading,
                 loadMoreRecipes: _fetchRecipes,
-                onPageSelected: _onPageButtonPressed,
+                selectMenuItem: _onMenuButtonPressed,
+                changePages: _changePages,
               ),
               UploadRecipePage(), // Placeholder for Profile Page
               Container(), // Placeholder for Support Page

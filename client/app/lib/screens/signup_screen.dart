@@ -60,6 +60,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         'email' : _email,
       };
 
+      bool signupSuccess = false;
+
       try {
         final response = await http.post(
           signupURL,
@@ -70,8 +72,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         // If return code is 201, it means we have created an account.
         final dynamic data;
         if (response.statusCode == 201) {
+          signupSuccess = true;
           data = jsonDecode(response.body);
-          TokenManager().authToken = data['authentication_token'];
+          TokenManager().authenticationToken = data['authentication_token'];
           _loadingFrameKey.currentState?.updateMessage("Welcome $_username!");
         } else {
           data = jsonDecode(response.body);
@@ -84,11 +87,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
       await Future.delayed(const Duration(seconds: 3));
       if (!mounted) return; // Ensure widget is still mounted
       Navigator.of(context).pop(); // Dismiss the dialog
-      // Head to logged in page.
-      Navigator.pushReplacementNamed(
-        context, 
-        '/logged_in'
-      );
+
+      if (signupSuccess) {
+        // Head to logged in page.
+        Navigator.pushReplacementNamed(
+          context, 
+          '/logged_in'
+        );
+      }
     }
   }
 

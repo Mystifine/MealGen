@@ -24,7 +24,8 @@ class JWTAuthentication:
     
     payload = {
       "user_id" : user_id,
-      "exp": datetime.now() + timedelta(hours=10)
+      "iat" : datetime.now(datetime.timezone.utc),
+      "exp": datetime.now(datetime.timezone.utc) + timedelta(hours=10)
     }
     
     authentication_token = jwt.encode(payload, jwt_secret_key, algorithm='HS256');
@@ -39,15 +40,21 @@ class JWTAuthentication:
       token (str): The token to be authenticated
 
     Returns:
+      int: 1 if successful 0 if failed.
       dict[str : str] | str: The payload of the token or an error message.
     """
     
     jwt_secret_key = Settings.JWT_SECRET_KEY;
     
     try:
-      payload = jwt.decode(token, jwt_secret_key, algorithms=["HS256"]);
-      return payload;  
+      payload = jwt.decode(
+        token, 
+        jwt_secret_key, 
+        options={"verify_exp": True},
+        algorithms=["HS256"]
+      );
+      return 1, payload;  
     except jwt.ExpiredSignatureError:
-      return "Token has expired";
+      return 0, "Token has expired";
     except jwt.InvalidTokenError:
-      return "Invalid token";
+      return 0, "Invalid token";

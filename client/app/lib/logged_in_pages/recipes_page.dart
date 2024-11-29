@@ -8,14 +8,16 @@ class RecipesPage extends StatelessWidget {
   final VoidCallback loadMoreRecipes;
 
   // callback to setState for main screen
-  final Function(int) onPageSelected;
+  final Function(int) changePages;
+  final Function(int) selectMenuItem;
 
   const RecipesPage({
     super.key,
     required this.recipes,
     required this.isLoading,
     required this.loadMoreRecipes,
-    required this.onPageSelected,
+    required this.changePages,
+    required this.selectMenuItem,
   });
 
   @override
@@ -24,7 +26,7 @@ class RecipesPage extends StatelessWidget {
       backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          onPageSelected(2);
+          changePages(2);
         },
         tooltip: 'Create new recipe.',
         child: const Icon(Icons.add),

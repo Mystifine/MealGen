@@ -12,6 +12,7 @@ from ..enums.flask_environment_enums import FLASK_ENVIRONMENT_ENUMS;
 
 # End point imports
 from ..endpoints.auth_endpoints import AuthEndpoints;
+from ..endpoints.recipe_endpoints import RecipeEndpoints;
 
 APPLICATION_PORT = 5000;
 
@@ -54,6 +55,7 @@ class FlaskApp:
     blueprint_callbacks = [];    
   
     blueprint_callbacks.append(AuthEndpoints.main);
+    blueprint_callbacks.append(RecipeEndpoints.main);
     
     for callback in blueprint_callbacks:
       blueprint = callback(self.flask_app, mongo_db);

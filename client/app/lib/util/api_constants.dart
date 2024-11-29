@@ -8,4 +8,6 @@ class APIConstants {
 
   static const String loginEndpoint = "$baseUrl/auth/login";
   static const String signupEndpoint = "$baseUrl/auth/signup";
+  
+  static const String uploadRecipeEndpoint = '$baseUrl/recipe/upload';
 }

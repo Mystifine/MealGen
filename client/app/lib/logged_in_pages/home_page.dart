@@ -4,10 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:app/widgets/home_menu_button.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key, required this.onPageSelected});
-
   // callback to setState for main screen
-  final Function(int) onPageSelected;
+  final Function(int) changePages;
+  final Function(int) selectMenuItem;
+
+  const HomePage({
+    super.key, 
+    required this.changePages,
+    required this.selectMenuItem,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,35 +42,35 @@ class HomePage extends StatelessWidget {
                 buttonIcon: Icons.person, 
                 buttonText: 'Profile', 
                 onPressed: () {
-                  onPageSelected(0);
+                  changePages(0);
                 },
               ),
               HomeMenuButton(
                 buttonIcon: Icons.local_pizza, 
                 buttonText: 'Recipes', 
                 onPressed: () {
-                  onPageSelected(1);
+                  selectMenuItem(1);
                 },
               ),
               HomeMenuButton(
                 buttonIcon: Icons.upload, 
                 buttonText: 'Upload Recipe', 
                 onPressed: () {
-                  onPageSelected(2);
+                  changePages(2);
                 }
               ),
               HomeMenuButton(
                 buttonIcon: Icons.support_agent, 
                 buttonText: 'Support', 
                 onPressed: () {
-                  onPageSelected(0);
+                  //changePages(0);
                 },
               ),
               HomeMenuButton(
                 buttonIcon: Icons.settings, 
                 buttonText: 'Settings', 
                 onPressed: () {
-                  onPageSelected(0);
+                  //changePages(0);
                 },
               ),
             ],

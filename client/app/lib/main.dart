@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
       title: 'MealGen',
       debugShowCheckedModeBanner: false,
 
-      initialRoute: AppRoutes.introduction,
+      //initialRoute: AppRoutes.introduction,
       onGenerateRoute: AppRoutes.generateRoute,
 
       theme: ThemeData(
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
 
-      home: const LoggedInBaseScreen(), //const IntroductionScreen(),
+      home: const IntroductionScreen(), //const LoggedInBaseScreen(), //const IntroductionScreen(),
     );
   }
 }

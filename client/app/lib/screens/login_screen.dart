@@ -61,6 +61,8 @@ class _LoginScreenState extends State<LoginScreen> {
       'password' : _password,
     };
 
+    bool loginSuccess = false;
+
     try {
       final response = await http.post(
         loginURL,
@@ -72,7 +74,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final dynamic data;
       if (response.statusCode == 200) {
         data = jsonDecode(response.body);
-        TokenManager().authToken = data['authentication_token'];
+        TokenManager().authenticationToken = data['authentication_token'];
+        loginSuccess = true;
         _loadingFrameKey.currentState?.updateMessage("Welcome $_username!");
       } else {
         data = jsonDecode(response.body);
@@ -85,10 +88,13 @@ class _LoginScreenState extends State<LoginScreen> {
     await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return; // Ensure widget is still mounted
     Navigator.of(context).pop(); // Dismiss the dialog
-    Navigator.pushReplacementNamed(
-      context, 
-      '/logged_in'
-    );
+
+    if (loginSuccess) {
+      Navigator.pushReplacementNamed(
+        context, 
+        '/logged_in'
+      );
+    }
   }
 
   @override
