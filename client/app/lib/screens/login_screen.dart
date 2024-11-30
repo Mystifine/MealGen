@@ -1,7 +1,7 @@
 import 'package:app/routes/app_routes.dart';
 
 import 'package:app/util/validators.dart';
-import 'package:app/util/token_manager.dart';
+import 'package:app/util/session_manager.dart';
 import 'package:app/util/api_constants.dart';
 
 import 'package:app/widgets/background_scaffold.dart';
@@ -74,7 +74,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final dynamic data;
       if (response.statusCode == 200) {
         data = jsonDecode(response.body);
-        TokenManager().authenticationToken = data['authentication_token'];
+        SessionManager().authenticationToken = data['authentication_token'];
+        SessionManager().username = _username;
+        SessionManager().password = _password;
+        SessionManager().userid = data['userid'];
         loginSuccess = true;
         _loadingFrameKey.currentState?.updateMessage("Welcome $_username!");
       } else {

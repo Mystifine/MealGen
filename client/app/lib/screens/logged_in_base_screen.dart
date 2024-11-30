@@ -18,40 +18,6 @@ class _LoggedInBaseScreenState extends State<LoggedInBaseScreen> {
   int _selectedMenuIndex = 0;
   int _selectedPageIndex = 0;
 
-  // Recipes Information
-  final List<Map<String, String>> _recipes = [];
-  bool _isLoading = false;
-  int _page = 1;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchRecipes();
-  }
-
-  Future<void> _fetchRecipes() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // fetch recipes
-    final newRecipes = List.generate(10, (index) {
-      final recipeIndex = ((_page - 1) * 10) + index + 1;
-      return {
-        "title": "Recipe $recipeIndex",
-        "description": "Description for Recipe $recipeIndex",
-        "imageUrl": "https://via.placeholder.com/300x200.png?text=Recipe+$recipeIndex"
-      };
-    });
-
-    setState(() {
-      _recipes.addAll(newRecipes);
-      _isLoading = false;
-      _page++;
-    });
-    
-  }
-
   // changes the page to the provided index
   void _changePages(int index) {
     setState(() {
@@ -124,10 +90,7 @@ class _LoggedInBaseScreenState extends State<LoggedInBaseScreen> {
                 selectMenuItem: _onMenuButtonPressed,
                 changePages: _changePages,
               ),
-              RecipesPage(
-                recipes: _recipes,
-                isLoading: _isLoading,
-                loadMoreRecipes: _fetchRecipes,
+              RecipePageScreen(
                 selectMenuItem: _onMenuButtonPressed,
                 changePages: _changePages,
               ),

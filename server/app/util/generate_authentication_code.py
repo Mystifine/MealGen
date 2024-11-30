@@ -1,6 +1,6 @@
 import jwt;
 
-from datetime import datetime, timedelta;
+from datetime import datetime, timezone, timedelta;
 
 from ..core.settings import Settings;
 
@@ -24,8 +24,8 @@ class JWTAuthentication:
     
     payload = {
       "user_id" : user_id,
-      "iat" : datetime.now(datetime.timezone.utc),
-      "exp": datetime.now(datetime.timezone.utc) + timedelta(hours=10)
+      "iat" : datetime.now(timezone.utc),
+      "exp": datetime.now(timezone.utc) + timedelta(hours=10)
     }
     
     authentication_token = jwt.encode(payload, jwt_secret_key, algorithm='HS256');

@@ -1,6 +1,6 @@
-import bcrypt;
 import traceback;
 import datetime;
+import time;
 
 from pymongo.errors import PyMongoError;
 from bson import ObjectId;
@@ -71,8 +71,8 @@ class RecipeEndpoints:
           'title' : recipe_title,
           'description' : recipe_description,
           'image_bytes' : recipe_image_bytes,
-          'author' : user_id,
-          'publish_date' : datetime.datetime.now(datetime.timezone.utc)
+          'author' : ObjectId(user_id),
+          'publish_time' : int(time.time()),
         };
         
         recipes_collection = mongo_db.database['recipes'];
@@ -91,65 +91,89 @@ class RecipeEndpoints:
         return_data['error'] = API_ERROR_ENUMS.INTERNAL_SERVER_ERROR.value
         return jsonify(return_data), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value
 
-    @auth_blueprint.route('/signup', methods=['POST'])
-    def signup():
+    @auth_blueprint.route('/get/<user_id>/<int:page>/<int:page_size>/<sort_option>', methods=['GET'])
+    def getRecipes(user_id : str, page : int, page_size : int, sort_option : str):
       if not request.is_json:
         return jsonify({'error': API_ERROR_ENUMS.DATA_NOT_JSON.value}), HTTP_CODE_ENUMS.BAD_REQUEST.value;
 
       try:
-        # Retrieve data from request, retrieved data is a python dictionary.
-        data = request.get_json();
+        # Retrieval of recipes does not require the user to be logged in.
         
-        username = data['username'];
-        email = data['email'];
-        password = data['password'];
+        recipes_collection = mongo_db.database['recipes'];
         
-        # First, make sure that these are valid inputs before proceeding.
-        if not UserInputValidation.validate_username(username):
-          return jsonify({'error': API_ERROR_ENUMS.INVALID_USERNAME.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;
-        if not UserInputValidation.validate_email(email):
-          return jsonify({'error': API_ERROR_ENUMS.INVALID_EMAIL.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;
-        if not UserInputValidation.validate_password(password):
-          return jsonify({'error': API_ERROR_ENUMS.INVALID_PASSWORD.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;
-        
-        users_collection = mongo_db.database["users"];
-        
-        # We want to query the username to ensure that the username has not already been taken.
-        username_result = users_collection.find_one({"username" : username});
-        
-        # If we got a result that means that the username is already taken.
-        if username_result:
-          return jsonify({'error': API_ERROR_ENUMS.USERNAME_TAKEN.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;
-        
-        # If we get this far, we are valid to create a new account. We will start the hashing process.
-        salt = bcrypt.gensalt();
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8');
-        
-        # Now we want to try to write to database;
-        document_data = {
-          'email' : email,
-          'username' : username,
-          'password' : hashed_password,
-        }
-
-        insert_result = users_collection.insert_one(document_data);
-        
-        # After MongoDB automatically generates an _id field we will use that to generate a AuthenticationToken.
-        # We will save the active authentication token to the database and use that to find the user.
-        user_id = str(insert_result.inserted_id);
-        authentication_token = JWTAuthentication.generateAuthenticationToken(user_id);
-
-        users_collection.update_one(
-          {'username' : username}, 
-          {'$set' : {'authentication_token' : authentication_token,}}
-        );
-        
-        # Set return data and return it to the client.
-        return_data = {
-          'authentication_token' : authentication_token,
+        # sort settings for each sort option
+        sort_fields = {
+          'likes' : {'likes_count' : -1},
+          'publish_time' : {'publish_time' : -1}
         };
         
-        return jsonify(return_data), HTTP_CODE_ENUMS.CREATED.value;
+        # get the sorting data or default it
+        sort_field = sort_fields.get(sort_option, {'likes_count':-1});
+        
+        query_data = [
+          {
+            '$lookup' : {
+              'from' : 'likes', # The collection to look from
+              'localField' : '_id', # The field to match in recipes
+              'foreignField' : 'recipe_id', # the field to match in likes
+              'as' : 'likes', # name of new attribute
+            }
+          },
+          {
+            '$addFields' : {
+              'likes_count' : {'$size' : '$likes'}, # count the number of likes
+              'is_liked': {
+                # conditional 
+                '$cond': {
+                    'if': {
+                      '$in': [
+                        user_id, 
+                        {
+                          '$map': {
+                            'input': '$likes', 
+                            'as': 'like', 
+                            'in': '$$like.user_id'
+                          }
+                        }
+                      ]
+                    },
+                    'then': True,
+                    'else': False,
+                }
+              }
+            }
+          },
+          {
+            '$project' : {
+              '_id' : 1,
+              'title' : 1,
+              'description' : 1,
+              'image_bytes' : 1,
+              'likes_count' : 1,
+              'publish_time' : 1,
+            } # what to include in the final combination
+          },
+          {
+            '$sort' : sort_field,
+          },
+          {
+            '$skip' : (page - 1) * page_size # Pagination allows us to get what we need
+          },
+          {
+            '$limit' : page_size # limits how much we get back
+          }
+        ]
+        
+        # retrieve the recipes and convert the recipe id to a string so it can be serialized
+        recipes = recipes_collection.aggregate(query_data);
+        
+        # Convert _id to string
+        formatted_results = []
+        for recipe in recipes:
+          recipe['_id'] = str(recipe['_id'])
+          formatted_results.append(recipe)
+
+        return jsonify(formatted_results), HTTP_CODE_ENUMS.OK.value;
       except PyMongoError as err:
         # if the validation fails, return the errors
         print(f"An error has occured: {err}");

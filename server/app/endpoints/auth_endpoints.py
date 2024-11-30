@@ -64,6 +64,7 @@ class AuthEndpoints:
         # Set return data and return it to the client.
         return_data = {
           'authentication_token' : authentication_token,
+          'userid' : str(query_result['_id']),
         };
         
         return jsonify(return_data), HTTP_CODE_ENUMS.OK.value;
@@ -133,6 +134,7 @@ class AuthEndpoints:
         # Set return data and return it to the client.
         return_data = {
           'authentication_token' : authentication_token,
+          'userid' : user_id,
         };
         
         return jsonify(return_data), HTTP_CODE_ENUMS.CREATED.value;

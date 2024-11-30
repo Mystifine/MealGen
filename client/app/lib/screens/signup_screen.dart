@@ -1,7 +1,7 @@
 import 'package:app/routes/app_routes.dart';
 
 import 'package:app/util/validators.dart';
-import 'package:app/util/token_manager.dart';
+import 'package:app/util/session_manager.dart';
 import 'package:app/util/api_constants.dart';
 
 import 'package:app/widgets/background_scaffold.dart';
@@ -74,7 +74,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
         if (response.statusCode == 201) {
           signupSuccess = true;
           data = jsonDecode(response.body);
-          TokenManager().authenticationToken = data['authentication_token'];
+          SessionManager().authenticationToken = data['authentication_token'];
+          SessionManager().username = _username;
+          SessionManager().password = _password;
+          SessionManager().userid = data['userid'];
           _loadingFrameKey.currentState?.updateMessage("Welcome $_username!");
         } else {
           data = jsonDecode(response.body);

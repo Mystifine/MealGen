@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:app/widgets/loading_frame.dart';
-import 'package:app/util/token_manager.dart';
+import 'package:app/util/session_manager.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -72,7 +72,7 @@ class _UploadRecipePageState extends State<UploadRecipePage> {
         'title' : _title,
         'description' : _description,
         'image_bytes' : base64Image,
-        'authentication_token' : TokenManager().authenticationToken
+        'authentication_token' : SessionManager().authenticationToken
       };
 
       int responseStatusCode = 0;
@@ -120,6 +120,7 @@ class _UploadRecipePageState extends State<UploadRecipePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text(
           'Upload Your Recipe!', 
           textAlign: TextAlign.center,
