@@ -106,9 +106,6 @@ class _RecipesPageScreenState extends State<RecipePageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Fetch recipes on build 
-    _fetchRecipes();
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton(
