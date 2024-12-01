@@ -1,5 +1,5 @@
 import 'package:app/util/api_constants.dart';
-import 'package:app/logged_in_pages/upload_recipe_page.dart';
+import 'package:app/logged_in_pages/recipe_detail_page.dart';
 import 'package:app/util/session_manager.dart';
 
 import 'package:flutter/material.dart';
@@ -39,8 +39,54 @@ class _RecipesPageScreenState extends State<RecipePageScreen> {
     _fetchRecipes();
   }
 
-  Future<void> _likeRecipe(String recipeId) async {
+  Future<void> _toggleRecipeLike(Map<String, dynamic> recipe) async {
+    // Set up http post request to like or unlike
+    final Uri likeRecipeEndpoint = Uri.parse(APIConstants.likeRecipeEndpoint);
+    final Uri unlikeRecipeEndpoint = Uri.parse(APIConstants.unlikeRecipeEndpoint);
 
+    final payload = {
+      'authentication_token' : SessionManager().authenticationToken,
+      'recipe_id' : recipe['_id'],
+    };
+
+    // determine the endpoint to use depending on our current state
+    final Uri endpoint;
+    if (recipe["is_liked"] == true) {
+      endpoint = unlikeRecipeEndpoint;
+    } else {
+      endpoint = likeRecipeEndpoint;
+    }
+    
+    try {
+      final response = await http.post(
+        endpoint,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(payload),
+      );
+
+      if (response.statusCode == 200) {
+        // status is okay, update recipe data as needed;
+        setState(() {
+          if (recipe["is_liked"] == true) {
+            recipe["is_liked"] = false;
+            recipe["likes_count"] = (recipe["likes_count"]!) - 1;
+          } else {
+            recipe["is_liked"] = true;
+            recipe["likes_count"] = (recipe["likes_count"]!) + 1;
+          }
+        });
+      } else if (response.statusCode == 401) {
+        // we are not authenticated so we should log out
+        // unauthorized access
+        Navigator.popUntil(context, ModalRoute.withName('/'));  
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unauthorized access detected, please login again.')),
+        );
+      }
+    } catch (e) {
+      print("An error has occured: $e");
+    }
   }
 
   Future<void> _fetchRecipes() async {
@@ -71,12 +117,13 @@ class _RecipesPageScreenState extends State<RecipePageScreen> {
           _recipes.addAll(data.map((item) {
             return {
               '_id' : item['_id'],
-              "title": item["title"] ?? "",
-              "description": item["description"] ?? "",
+              "title": item["title"] ?? '',
+              'author_name': item['author_name'] ?? '',
+              "description": item["description"]  ?? '',
               'image_bytes' : item['image_bytes'] ?? '',
               'publish_time' : item['publish_time'],
-              'is_liked' : item['is_liked'] ?? false,
-              "likes_count": item["likes_count"] ?? 0, // Ensure likes_count is a string
+              'is_liked' : item['is_liked'],
+              "likes_count": item["likes_count"], // Ensure likes_count is a string
             };
           }).toList());
           _page++;
@@ -129,24 +176,35 @@ class _RecipesPageScreenState extends State<RecipePageScreen> {
                     fontWeight: FontWeight.bold
                   ),
                 ),
-                DropdownButton<String>(
-                  value: _selectedSortOption,
-                  icon: const Icon(Icons.arrow_drop_down),
-                  underline: Container(
-                    height: 1,
-                    color: Colors.grey,
-                  ),
-                  items: _sortOptions.map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(), 
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      _sortRecipes(newValue);
-                    }
-                  }
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        _sortRecipes(_selectedSortOption);
+                      }, 
+                      icon: Icon(Icons.refresh),
+                    ),
+                    DropdownButton<String>(
+                      value: _selectedSortOption,
+                      icon: const Icon(Icons.arrow_drop_down),
+                      underline: Container(
+                        height: 1,
+                        color: Colors.grey,
+                      ),
+                      items: _sortOptions.map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(), 
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          _sortRecipes(newValue);
+                        }
+                      }
+                    )
+                  ],
                 )
               ],
             ),
@@ -156,7 +214,7 @@ class _RecipesPageScreenState extends State<RecipePageScreen> {
               onNotification: (ScrollNotification scrollInfo) {
                 if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent &&
                     !_isLoading) {
-                  _fetchRecipes(); // Load more recipes when scrolled to the bottom
+                      _fetchRecipes(); // Load more recipes when scrolled to the bottom
                 }
                 return true;
               },
@@ -172,82 +230,87 @@ class _RecipesPageScreenState extends State<RecipePageScreen> {
                         : const SizedBox.shrink();
                   }
                   final recipe = _recipes[index];
-                  return Card(
-                    margin: const EdgeInsets.all(12.0),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12)
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RecipeDetailPage(
+                            recipe: recipe, 
+                            toggleRecipeLikeCallback: _toggleRecipeLike,
                           ),
-                          child: recipe["image_bytes"].isNotEmpty ?
-                            Image.memory(
-                              base64Decode(recipe["image_bytes"]!),
-                              width: double.infinity,
-                              height: 200,
-                              fit: BoxFit.cover,
-                            ) : 
-                            Image.asset('assets/placeholder.png')
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    recipe["title"]!,
-                                    style: const TextStyle(
-                                      fontSize: 20, 
-                                      fontWeight: FontWeight.bold
+                      );
+                    },
+                    child: Card(
+                      margin: const EdgeInsets.all(12.0),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(12)
+                            ),
+                            child: recipe["image_bytes"].isNotEmpty ?
+                              Image.memory(
+                                base64Decode(recipe["image_bytes"]!),
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              ) : 
+                              Image.asset('assets/placeholder.png')
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      recipe["title"]!,
+                                      style: const TextStyle(
+                                        fontSize: 20, 
+                                        fontWeight: FontWeight.bold
+                                      ),
                                     ),
-                                  ),
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.thumb_up,
-                                          color: recipe["is_liked"] == true ? Colors.blue : Colors.grey,
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.thumb_up,
+                                            color: recipe["is_liked"] == true ? Colors.blue : Colors.grey,
+                                          ),
+                                          onPressed: () {
+                                            _toggleRecipeLike(recipe);
+                                          },
                                         ),
-                                        onPressed: () {
-                                          setState(() {
-                                            // Toggle like status
-                                            if (recipe["is_liked"] == true) {
-                                              recipe["is_liked"] = false;
-                                              recipe["likes_count"] = (recipe["likes_count"]!) - 1;
-                                            } else {
-                                              recipe["is_liked"] = true;
-                                              recipe["likes_count"] = (recipe["likes_count"]!) + 1;
-                                            }
-                                          });
-                                        },
-                                      ),
-                                      Text(
-                                        "${recipe["likes_count"]} Likes",
-                                        style: const TextStyle(
-                                          fontSize: 16, 
-                                          fontWeight: FontWeight.bold,
+                                        Text(
+                                          "${recipe["likes_count"]} Likes",
+                                          style: const TextStyle(
+                                            fontSize: 16, 
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                recipe["description"]!,
-                                style: const TextStyle(
-                                    fontSize: 16, color: Colors.black54),
-                              ),
-                            ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  recipe["description"]!,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 16, color: Colors.black54),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },

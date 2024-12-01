@@ -10,6 +10,8 @@ class APIConstants {
   static const String signupEndpoint = "$baseUrl/auth/signup";
   
   static const String uploadRecipeEndpoint = '$baseUrl/recipe/upload';
+  static const String likeRecipeEndpoint = '$baseUrl/recipe/like';
+  static const String unlikeRecipeEndpoint = '$baseUrl/recipe/unlike';
 
   // dynamic retrieval of specific endpoint
   static String getRecipesEndpoint(String userid, int page, int pageSize, String sortOption) {

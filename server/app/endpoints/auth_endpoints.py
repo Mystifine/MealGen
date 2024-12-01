@@ -43,7 +43,7 @@ class AuthEndpoints:
         query_result = users_collection.find_one({
           "username": username
         });
-
+        
         # If we can't find an entry then we can't login.
         if query_result is None:
           return jsonify({'error': API_ERROR_ENUMS.USERNAME_DOES_NOT_EXIST.value}), HTTP_CODE_ENUMS.INTERNAL_CONFLICT.value;

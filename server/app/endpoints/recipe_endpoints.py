@@ -120,14 +120,23 @@ class RecipeEndpoints:
             }
           },
           {
+            '$lookup' : {
+              'from' : 'users',
+              'localField' : 'author',
+              'foreignField' : '_id',
+              'as' : 'author_details',
+            }
+          },
+          {
             '$addFields' : {
               'likes_count' : {'$size' : '$likes'}, # count the number of likes
+              'author_name': {'$arrayElemAt': ['$author_details.username', 0]},  # Extract the first matched name
               'is_liked': {
                 # conditional 
                 '$cond': {
                     'if': {
                       '$in': [
-                        user_id, 
+                        ObjectId(user_id), 
                         {
                           '$map': {
                             'input': '$likes', 
@@ -146,10 +155,12 @@ class RecipeEndpoints:
           {
             '$project' : {
               '_id' : 1,
+              'author_name': 1,  # Include author_name in the final output
               'title' : 1,
               'description' : 1,
               'image_bytes' : 1,
               'likes_count' : 1,
+              'is_liked' : 1,
               'publish_time' : 1,
             } # what to include in the final combination
           },
@@ -182,6 +193,155 @@ class RecipeEndpoints:
         # if the validation fails, return the errors
         print(f"An error has occured: {err}");
         return jsonify({'error': API_ERROR_ENUMS.INTERNAL_SERVER_ERROR.value}), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value
+
+    @auth_blueprint.route('/like', methods=['POST'])
+    def like():
+      if not request.is_json:
+        return jsonify({'error': API_ERROR_ENUMS.DATA_NOT_JSON.value}), HTTP_CODE_ENUMS.BAD_REQUEST.value;
+
+      # Set return data and return it to the client.
+      return_data = {};
+
+      try:
+        # Retrieve data from request, retrieved data is a python dictionary.
+        data = request.get_json();
+        
+        # The expected data we will be receiving.
+        recipe_id = data['recipe_id'];
+        client_authentication_token = data['authentication_token'];
+        
+        if not (recipe_id or client_authentication_token):
+          return_data['error'] = API_ERROR_ENUMS.MISSING_FIELDS.value;
+          return jsonify(return_data), HTTP_CODE_ENUMS.BAD_REQUEST.value;
+        
+        # We want to see if the authentication_token is valid or not.
+        # If it is not valid we will tell the client to log out
+        # If it is valid we will process the request
+        
+        auth_code, auth_result = JWTAuthentication.validateAuthenticationToken(client_authentication_token);
+        if (auth_code == 0):
+          return_data['error'] = API_ERROR_ENUMS.UNAUTHORIZED_REQUEST.value;
+          return jsonify(return_data), HTTP_CODE_ENUMS.UNAUTHORIZED.value;
+        
+        user_id = auth_result['user_id'];
+        users_collection = mongo_db.database["users"];
+        recipes_collection = mongo_db.database['recipes'];
+        likes_collection = mongo_db.database['likes'];
+
+        user_query_result = users_collection.find_one({
+          '_id' : ObjectId(user_id),
+          "authentication_token": client_authentication_token
+        });
+
+        # If we can't find an entry then this authentication_token is not valid
+        if user_query_result is None:
+          return_data['error'] = API_ERROR_ENUMS.UNAUTHORIZED_REQUEST.value;
+          return jsonify(return_data), HTTP_CODE_ENUMS.UNAUTHORIZED.value;
+        
+        # If we can't find the recipe then this is a invalid request
+        recipe_query_result = recipes_collection.find_one({
+          '_id' : ObjectId(recipe_id),
+        })
+        
+        if recipe_query_result is None:
+          return_data['error'] = API_ERROR_ENUMS.INTERNAL_SERVER_ERROR.value;
+          return jsonify(return_data), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value;
+        
+        # Make sure the user has not already liked the post
+        like_query_result = likes_collection.find_one({
+          'user_id' : ObjectId(user_id),
+          'recipe_id' : ObjectId(recipe_id)
+        })
+        
+        # If it was already liked then cancel
+        if like_query_result:
+          return_data['error'] = API_ERROR_ENUMS.INTERNAL_SERVER_ERROR.value;
+          return jsonify(return_data), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value;
+        
+        # All is good at this point, we now want to add to likes
+        document = {
+          'recipe_id' : ObjectId(recipe_id),
+          'user_id' : ObjectId(user_id),
+        };
+        
+        likes_collection.insert_one(document);
+        
+        return jsonify(return_data), HTTP_CODE_ENUMS.OK.value;
+      except PyMongoError as err:
+        # if the validation fails, return the errors
+        print(f"An error has occured: {err}");
+        return_data['error'] = API_ERROR_ENUMS.DATABASE_ERROR.value
+        return jsonify(return_data), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value
+      except Exception as err:
+        # if the validation fails, return the errors
+        print(f"An error has occured: {err}");
+        traceback.print_exc();
+        return_data['error'] = API_ERROR_ENUMS.INTERNAL_SERVER_ERROR.value
+        return jsonify(return_data), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value
+
+    @auth_blueprint.route('/unlike', methods=['POST'])
+    def unlike():
+      if not request.is_json:
+        return jsonify({'error': API_ERROR_ENUMS.DATA_NOT_JSON.value}), HTTP_CODE_ENUMS.BAD_REQUEST.value;
+
+      # Set return data and return it to the client.
+      return_data = {};
+
+      try:
+        # Retrieve data from request, retrieved data is a python dictionary.
+        data = request.get_json();
+        
+        # The expected data we will be receiving.
+        recipe_id = data['recipe_id'];
+        client_authentication_token = data['authentication_token'];
+        
+        if not (recipe_id or client_authentication_token):
+          return_data['error'] = API_ERROR_ENUMS.MISSING_FIELDS.value;
+          return jsonify(return_data), HTTP_CODE_ENUMS.BAD_REQUEST.value;
+        
+        # We want to see if the authentication_token is valid or not.
+        # If it is not valid we will tell the client to log out
+        # If it is valid we will process the request
+        
+        auth_code, auth_result = JWTAuthentication.validateAuthenticationToken(client_authentication_token);
+        if (auth_code == 0):
+          return_data['error'] = API_ERROR_ENUMS.UNAUTHORIZED_REQUEST.value;
+          return jsonify(return_data), HTTP_CODE_ENUMS.UNAUTHORIZED.value;
+        
+        user_id = auth_result['user_id'];
+        users_collection = mongo_db.database["users"];
+        likes_collection = mongo_db.database['likes'];
+
+        user_query_result = users_collection.find_one({
+          '_id' : ObjectId(user_id),
+          "authentication_token": client_authentication_token
+        });
+
+        # If we can't find an entry then this authentication_token is not valid
+        if user_query_result is None:
+          return_data['error'] = API_ERROR_ENUMS.UNAUTHORIZED_REQUEST.value;
+          return jsonify(return_data), HTTP_CODE_ENUMS.UNAUTHORIZED.value;
+        
+        # All is good at this point, we want to remove from likes
+        delete_filter = {
+          'recipe_id' : ObjectId(recipe_id),
+          'user_id' : ObjectId(user_id),
+        };
+        
+        likes_collection.delete_one(delete_filter);
+        
+        return jsonify(return_data), HTTP_CODE_ENUMS.OK.value;
+      except PyMongoError as err:
+        # if the validation fails, return the errors
+        print(f"An error has occured: {err}");
+        return_data['error'] = API_ERROR_ENUMS.DATABASE_ERROR.value
+        return jsonify(return_data), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value
+      except Exception as err:
+        # if the validation fails, return the errors
+        print(f"An error has occured: {err}");
+        traceback.print_exc();
+        return_data['error'] = API_ERROR_ENUMS.INTERNAL_SERVER_ERROR.value
+        return jsonify(return_data), HTTP_CODE_ENUMS.INTERNAL_SERVER_ERROR.value
 
 
     return auth_blueprint;

@@ -27,8 +27,17 @@ class Settings:
     """
     Calls load_dotenv and loads all settings for the application.
     """
+    
     # load the env variables
-    load_dotenv("server/app/.env");
+    current_file_path = os.path.dirname(__file__);
+    
+    project_folder_path = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)));
+    
+    env_path = os.path.join(project_folder_path, 'server', 'app', '.env');
+    
+    if not load_dotenv(env_path):
+      print('FAILED TO GET ENVIRONMENT VARIABLES PLEASE TRY AGAIN.');
+      return;
 
     Settings.FLASK_ENV = os.getenv("FLASK_ENV");
     Settings.FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY");
