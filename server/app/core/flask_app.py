@@ -14,8 +14,6 @@ from ..enums.flask_environment_enums import FLASK_ENVIRONMENT_ENUMS;
 from ..endpoints.auth_endpoints import AuthEndpoints;
 from ..endpoints.recipe_endpoints import RecipeEndpoints;
 
-APPLICATION_PORT = 5000;
-
 class FlaskApp:
   """
   Flask App Class, responsible for loading and initiating the flask app while registering any routing blueprints.
@@ -97,6 +95,8 @@ class FlaskApp:
         print(f"An error occurred: {exception}")
       mongo_db.closeConnection();
         
+    APPLICATION_PORT = Settings.FLASK_PORT_NUMBER;    
+    
     # attach the database to the flask app
     self.flask_app.mongo_db = mongo_db;
     self.flask_app.run(port=APPLICATION_PORT);
